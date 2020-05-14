@@ -1,23 +1,24 @@
-console.clear();
 import Phaser from "phaser";
 
+console.clear();
+
 //game balance
-var GRAVITY = 0.6;
-var JUMP = 10;
-var speed = 2;
-var box_rate = 20;
-var box_weight = 0.4;
-var box_speed = [2, 3.5, 5];
-var rotate_angle = [180];
-var position_y = [40, 60, 120];
+var GRAVITY = 2000;
+var JUMP = 700;
+var speed = 100;
+var box_rate = 500;
+var box_speed = [3.5, 5, 10];
+var position_y = [55, 50, 60, 65];
 
 //usage
 var player;
 var ground;
-var block;
-var box_0, box_1, box_2, box_3;
+var ground_texture;
 var bg1, bg2, bg3;
+var box;
+var box_0, box_1, box_2, box_3;
 var heart;
+var deadline;
 
 // groups
 var blocks;
@@ -25,16 +26,22 @@ var boxes;
 var platforms;
 var hearts;
 
+var particles;
+var emitter;
+var tween;
+
+// game engine setting
 const config = {
   type: Phaser.AUTO,
-  width: Math.min(Math.max(320, window.screen.width), 640),
+  width: Math.min(Math.max(320, window.innerWidth), 640),
   height: 208,
   backgroundColor: "#fafafa",
   parent: "gameframe",
+  pixelArt: true,
   physics: {
     default: "arcade",
     arcade: {
-      gravity: { y: 1000 },
+      gravity: { y: GRAVITY },
       debug: true
     }
   },
@@ -56,17 +63,7 @@ var image_heart = "assets/heart.png";
 var image_bg1 = "assets/bg1.png";
 var image_bg2 = "assets/bg2.png";
 var image_bg3 = "assets/bg3.png";
-var image_smile_walk1 = "assets/smile_walk1.png";
-var image_smile_walk2 = "assets/smile_walk2.png";
-var image_smile_walk3 = "assets/smile_walk3.png";
-var image_smile_walk4 = "assets/smile_walk4.png";
-var image_smile_jump1 = "assets/smile_jump1.png";
-var image_smile_jump2 = "assets/smile_jump2.png";
-var image_smile_jump3 = "assets/smile_jump3.png";
-var image_smile_jump4 = "assets/smile_jump4.png";
-var image_smile_jump5 = "assets/smile_jump5.png";
-var image_smile_jump6 = "assets/smile_jump6.png";
-var image_smile_jump7 = "assets/smile_jump7.png";
+var sprite_mouse = "assets/smile_jump_14.png";
 
 function preload() {
   // 'this' === Phaser.Scene
@@ -78,17 +75,11 @@ function preload() {
   this.load.image("bg1", image_bg1);
   this.load.image("bg2", image_bg2);
   this.load.image("bg3", image_bg3);
-  this.load.image("walk1", image_smile_walk1);
-  this.load.image("walk2", image_smile_walk2);
-  this.load.image("walk3", image_smile_walk3);
-  this.load.image("walk4", image_smile_walk4);
-  this.load.image("jump1", image_smile_jump1);
-  this.load.image("jump2", image_smile_jump2);
-  this.load.image("jump3", image_smile_jump3);
-  this.load.image("jump4", image_smile_jump4);
-  this.load.image("jump5", image_smile_jump5);
-  this.load.image("jump6", image_smile_jump6);
-  this.load.image("jump7", image_smile_jump7);
+  this.load.spritesheet("player", sprite_mouse, {
+    frameWidth: 14,
+    frameHeight: 14,
+    endFrame: 11
+  });
 }
 
 function create() {
@@ -96,64 +87,161 @@ function create() {
   const { width, height } = this.sys.game.config;
 
   //make group
-  // blocks = this.add.group();
-  // boxes = this.add.group();
-  // platforms = this.add.group();
-  // hearts = this.add.group();
+  blocks = this.add.group();
+  boxes = this.add.group();
+  platforms = this.add.group();
+  hearts = this.add.group();
 
   this.anims.create({
     key: "walk",
-    frames: [
-      { key: "walk1" },
-      { key: "walk2" },
-      { key: "walk3" },
-      { key: "walk4" }
-    ],
-    frameRate: 12,
+    frames: this.anims.generateFrameNumbers("player", {
+      start: 7,
+      end: 10,
+      first: 7
+    }),
+    frameRate: 20,
     repeat: -1
   });
 
   this.anims.create({
     key: "jump",
-    frames: [
-      { key: "jump1" },
-      { key: "jump2" },
-      { key: "jump3" },
-      { key: "jump4" },
-      { key: "jump5" },
-      { key: "jump6" },
-      { key: "jump7" }
-    ],
-    frameRate: 12,
+    frames: this.anims.generateFrameNumbers("player", {
+      start: 0,
+      end: 6,
+      first: 0
+    }),
+    frameRate: 20,
     repeat: 0
   });
 
-  player = this.physics.add.sprite(72, 20, "jump7").play("jump");
-  ground = this.add.zone(width / 2, height - 20).setSize(width, 20);
+  //group of ground_texture
+  platforms = this.add.group({
+    maxSize: -1
+  });
+
+  //group of boxes
+  boxes = this.physics.add.group({
+    maxSize: 10
+  });
+
+  // player add
+  player = this.physics.add
+    .sprite(72, 20, "walk")
+    .play("walk")
+    .setSize(14, 14)
+    .setScale(3);
+
+  // ground add
+  ground = this.add.zone(width, height - 20, width * 2, 20);
   this.physics.world.enable(ground, 1); // (0) DYNAMIC (1) STATIC
 
+  //disable mouse optional input
   this.input.mouse.disableContextMenu();
+
+  //collide event
+  this.physics.add.collider(player, ground, function() {
+    if (player.body.touching.down == true && player.anims.isPlaying == false) {
+      player.anims.play("walk");
+      // console.log("land");
+    }
+  });
+  // this.physics.add.collider(boxes, ground);
+  this.physics.add.collider(player, boxes, function() {
+    emitter.active = true;
+  });
+
+  //dying zone
+  deadline = this.add.zone(width / 2, height, 1280, 10);
+  this.physics.world.enable(deadline, 1); // (0) DYNAMIC (1) STATIC
+
+  // timer
+  this.time.addEvent({
+    delay: box_rate,
+    callback: onEvent,
+    callbackScope: this,
+    loop: true
+  });
+
+  //emitter
+  particles = this.add.particles("heart", null, {
+    scale: { min: 0.1, max: 1 },
+    x: player.x,
+    y: player.y,
+    alpha: 0
+  });
+  emitter = particles.createEmitter({
+    frequency: 10,
+    speed: 100,
+    lifespan: 500,
+    gravityY: -400,
+    scale: 2,
+    active: false,
+    x: player.x + 10,
+    y: player.y - 50
+  });
 }
 
 function update(time, delta) {
-  // var touching = zone.body.touching;
-  // var wasTouching = zone.body.wasTouching;
-
-  // if (touching.none && !wasTouching.none) {
-  //   zone.emit("leavezone");
-  // } else if (!touching.none && wasTouching.none) {
-  //   zone.emit("enterzone");
-  // }
-  // We aren't using this in the current example, but here is where you can run logic that you need
-  // to check over time, e.g. updating a player sprite's position based on keyboard input
-  // zone.body.debugBodyColor = zone.body.touching.none ? 0x00ffff : 0xffff00;
-  this.physics.world.collide(player, ground, function() {});
-
   this.input.on(
-    "pointerup",
+    "pointerdown",
     function(pointer) {
-      // console.log("up");
+      if (player.body.touching.down == true) {
+        player.anims.play("jump");
+        player.body.setVelocityY(-JUMP);
+      }
     },
     this
   );
+  // particles.y = player.y;
+  // emitter.active = false;
+  // var content = box_count.text;
+  // var txt = this.add.text(150, 100, "hello", {
+  //   color: "#000"
+  // });
+  // txt.setText(boxes.countActive(););
+}
+
+function onEvent() {
+  //create random box to baxes
+  box = this.physics.add
+    .image(
+      742,
+      Phaser.Math.RND.pick(position_y),
+      Phaser.Math.RND.pick(["box_0", "box_1", "box_2", "box_3"])
+    )
+    .setVelocityX(Phaser.Math.RND.pick(box_speed) * -speed)
+    .setBounceY(1);
+  //add collider to box with ground
+  this.physics.add.collider(box, ground);
+  //kill box when box hit deadline
+  this.physics.add.overlap(box, deadline, function(a, b) {
+    a.destroy();
+  });
+  boxes.add(box);
+
+  //when box touch the player
+  var tween_box = this.tweens.add({
+    targets: box,
+    scale: { from: 1, to: 0 },
+    x: { from: this.x, to: player.x },
+    y: { from: this.y, to: player.y },
+    ease: "Cubic", // 'Cubic', 'Elastic', 'Bounce', 'Back'
+    duration: 300,
+    repeat: 0, // -1: infinity
+    yoyo: false,
+    paused: true,
+    onComplete: function() {
+      this.destroy();
+      tween_box.stop();
+    },
+    onCompleteScope: box
+  });
+
+  this.physics.add.overlap(box, player, function(a, b) {
+    a.body.stop();
+    a.body.setAllowGravity(false);
+    a.tint = 0xff00ff;
+    tween_box.play();
+    // this.physics.accelerateToObject(a.body, player, 60, 300, 300);
+  });
 }
