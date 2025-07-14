@@ -9,7 +9,7 @@
   },
   "dependencies": {
     "phaser": "3.23.0",
-    "phaser3-rex-plugins": "1.1.14"
+    "phaser3-rex-plugins": "1.80.16"
   },
   "devDependencies": {
     "parcel-bundler": "^1.6.1"
