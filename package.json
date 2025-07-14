@@ -2,7 +2,6 @@
   "name": "smile-mouse-phaser3",
   "version": "1.0.0",
   "description": "",
-  "main": "index.html",
   "homepage": "https://hiteq.github.io/WebGame-SmileRunPhaser3",
   "scripts": {
     "start": "parcel index.html --open",
