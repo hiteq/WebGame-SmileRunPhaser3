@@ -3,9 +3,10 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.html",
+  "homepage": "https://hiteq.github.io/WebGame-SmileRunPhaser3",
   "scripts": {
     "start": "parcel index.html --open",
-    "build": "parcel build index.html"
+    "build": "parcel build index.html --public-url ./"
   },
   "dependencies": {
     "phaser": "3.23.0",
