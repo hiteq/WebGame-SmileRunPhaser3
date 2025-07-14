@@ -1,41 +1,30 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>Phaser 3 Template</title>
-
     <style>
-      html,
-      body,
-      #gameframe {
-        margin: 0;
-        padding: 0;
-      }
-
-      #gameframe {
-        min-width: 100vw;
-        min-height: 100vh;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-
-      #gameframe > canvas {
-        border-radius: 5px;
-        /* -ms-interpolation-mode: nearest-neighbor;
-        image-rendering: -webkit-optimize-contrast;
-        image-rendering: -webkit-crisp-edges;
-        image-rendering: -moz-crisp-edges;
-        image-rendering: -o-crisp-edges;
-        image-rendering: pixelated; */
-      }
+        html, body, #gameframe {
+            margin: 0;
+            padding: 0;
+        }
+        #gameframe {
+            min-width: 100vw;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        #gameframe > canvas {
+            border-radius: 5px;
+        }
     </style>
-  </head>
-
-  <body>
+</head>
+<body>
     <div id="gameframe"></div>
-    <script type="module" src="./app.js"></script>
-  </body>
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.23.0/dist/phaser.min.js"></script>
+    <script src="./app.js"></script>
+</body>
 </html>
