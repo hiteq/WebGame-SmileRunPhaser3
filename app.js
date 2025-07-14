@@ -35,14 +35,14 @@ const config = {
   type: Phaser.AUTO,
   width: Math.min(Math.max(320, window.innerWidth), 640),
   height: 208,
-  backgroundColor: "#fafafa",
+  backgroundColor: "#87CEEB",
   parent: "gameframe",
   pixelArt: true,
   physics: {
     default: "arcade",
     arcade: {
       gravity: { y: GRAVITY },
-      debug: true
+      debug: false
     }
   },
   scene: {
@@ -67,6 +67,18 @@ var sprite_mouse = "assets/smile_jump_14.png";
 
 function preload() {
   // 'this' === Phaser.Scene
+  console.log("Loading assets...");
+  
+  // 로딩 에러 핸들링
+  this.load.on('filecomplete', function (key, type, data) {
+    console.log('Loaded:', key, type);
+  });
+  
+  this.load.on('loaderror', function (file) {
+    console.error('Error loading:', file.key, file.url);
+  });
+  
+  // 에셋 로딩
   this.load.image("box_0", image_box_a_1);
   this.load.image("box_1", image_box_g_1);
   this.load.image("box_2", image_box_g9_1);
@@ -83,8 +95,20 @@ function preload() {
 }
 
 function create() {
+  console.log("Creating game...");
+  
   // You can access the game's config to read the width & height
   const { width, height } = this.sys.game.config;
+
+  // 배경 추가
+  bg1 = this.add.image(0, 0, "bg1").setOrigin(0, 0);
+  bg2 = this.add.image(0, 0, "bg2").setOrigin(0, 0);
+  bg3 = this.add.image(0, 0, "bg3").setOrigin(0, 0);
+
+  // 배경 크기 조정
+  bg1.setDisplaySize(width, height);
+  bg2.setDisplaySize(width, height);
+  bg3.setDisplaySize(width, height);
 
   //make group
   blocks = this.add.group();
@@ -92,6 +116,7 @@ function create() {
   platforms = this.add.group();
   hearts = this.add.group();
 
+  // 애니메이션 생성
   this.anims.create({
     key: "walk",
     frames: this.anims.generateFrameNumbers("player", {
@@ -124,16 +149,18 @@ function create() {
     maxSize: 10
   });
 
-  // player add
+  // player add (수정: "walk"가 아닌 "player" 텍스처 사용)
   player = this.physics.add
-    .sprite(72, 20, "walk")
-    .play("walk")
+    .sprite(72, 20, "player")
     .setSize(14, 14)
     .setScale(3);
+  
+  // 플레이어 애니메이션 시작
+  player.anims.play("walk");
 
-  // ground add
-  ground = this.add.zone(width, height - 20, width * 2, 20);
-  this.physics.world.enable(ground, 1); // (0) DYNAMIC (1) STATIC
+  // ground add (수정: 바닥을 보이는 직사각형으로 생성)
+  ground = this.add.rectangle(width / 2, height - 10, width, 20, 0x00ff00);
+  this.physics.add.existing(ground, true); // true = static body
 
   //disable mouse optional input
   this.input.mouse.disableContextMenu();
@@ -142,16 +169,18 @@ function create() {
   this.physics.add.collider(player, ground, function() {
     if (player.body.touching.down == true && player.anims.isPlaying == false) {
       player.anims.play("walk");
-      // console.log("land");
+      console.log("Player landed");
     }
   });
-  // this.physics.add.collider(boxes, ground);
+  
   this.physics.add.collider(player, boxes, function() {
-    emitter.active = true;
+    if (emitter) {
+      emitter.active = true;
+    }
   });
 
   //dying zone
-  deadline = this.add.zone(width / 2, height, 1280, 10);
+  deadline = this.add.zone(width / 2, height + 5, width * 2, 10);
   this.physics.world.enable(deadline, 1); // (0) DYNAMIC (1) STATIC
 
   // timer
@@ -163,12 +192,7 @@ function create() {
   });
 
   //emitter
-  particles = this.add.particles("heart", null, {
-    scale: { min: 0.1, max: 1 },
-    x: player.x,
-    y: player.y,
-    alpha: 0
-  });
+  particles = this.add.particles("heart");
   emitter = particles.createEmitter({
     frequency: 10,
     speed: 100,
@@ -179,33 +203,28 @@ function create() {
     x: player.x + 10,
     y: player.y - 50
   });
+  
+  // 입력 처리 (update 함수에서 이동)
+  this.input.on('pointerdown', function(pointer) {
+    if (player.body.touching.down == true) {
+      player.anims.play("jump");
+      player.body.setVelocityY(-JUMP);
+    }
+  }, this);
+
+  console.log("Game created successfully!");
 }
 
 function update(time, delta) {
-  this.input.on(
-    "pointerdown",
-    function(pointer) {
-      if (player.body.touching.down == true) {
-        player.anims.play("jump");
-        player.body.setVelocityY(-JUMP);
-      }
-    },
-    this
-  );
-  // particles.y = player.y;
-  // emitter.active = false;
-  // var content = box_count.text;
-  // var txt = this.add.text(150, 100, "hello", {
-  //   color: "#000"
-  // });
-  // txt.setText(boxes.countActive(););
+  // 업데이트 로직은 여기에 추가 가능
+  // 입력 처리는 create 함수로 이동했음
 }
 
 function onEvent() {
   //create random box to baxes
   box = this.physics.add
     .image(
-      742,
+      this.sys.game.config.width + 50,
       Phaser.Math.RND.pick(position_y),
       Phaser.Math.RND.pick(["box_0", "box_1", "box_2", "box_3"])
     )
@@ -223,8 +242,8 @@ function onEvent() {
   var tween_box = this.tweens.add({
     targets: box,
     scale: { from: 1, to: 0 },
-    x: { from: this.x, to: player.x },
-    y: { from: this.y, to: player.y },
+    x: { from: box.x, to: player.x },
+    y: { from: box.y, to: player.y },
     ease: "Cubic", // 'Cubic', 'Elastic', 'Bounce', 'Back'
     duration: 300,
     repeat: 0, // -1: infinity
